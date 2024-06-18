@@ -30,7 +30,7 @@ class ApolloEnv(gym.Env):
     def __init__(self):
         # action[acc, steer]
         params = {
-            'destination': 'straight',  # 自己的终点类型
+            'destination': 'straight',
             # action space
             'continuous_accel_range': [-5.0, 5.0],  # continuous acceleration range
             'continuous_steer_range': [-0.01, 0.01],  # continuous steering angle range
@@ -44,19 +44,13 @@ class ApolloEnv(gym.Env):
 
         self.observation_space = spaces.Box(np.array([-10, -10, -10, -10, -10, -10, -10]), np.array([10, 10, 10, 10, 10, 10, 10]), dtype=np.float32)
 
-        # 是否存储一个record
         self.save_record = True
-        # 当前场景运行时间
         self.runner_time = 0
-        # 当前场景的id
         self.scenario_id = -1
         self.runners = list()
         self.mbk = None
-        # parse the map
         self.map = MapParser(HD_MAP_PATH)
         print("the map is ok")
-        # 加载一个其余陪训车的轨迹单,被训练的car随便来一个轨迹
-        # 确定agent的行为为straight
         self.agent_dest = params['destination']
         self.scenario = None
         self.scenario_name = 'None'
@@ -68,7 +62,7 @@ class ApolloEnv(gym.Env):
                         '               and ((distanceToLeftLane<distanceToOriginalLane and carRightLane>20)implies(eventually[0,5](speed>11))) '
                         '               and ((distanceToLeftLane<distanceToOriginalLane and carRightLane>20)implies(eventually[0,5](distanceToOriginalLane<1)))'
                         '               and (speed < 13)'
-                        '               and ((need_to_stop>0)implies(eventually[0,2](speed<0.05))))'
+                        '               and ((nearestCarAhead<10)implies(eventually[0,3](speed<1))))'
                         'and '
                         'eventually[0,30](route_complete>10)'
                         )
@@ -146,7 +140,6 @@ class ApolloEnv(gym.Env):
         nearestCarSpeed = 100
         for id, l in localizations.items():
             minlane, dist = self.map.isin_lanes(l, agent.routing)
-            # 在agent的考虑范围内
             if(dist < 1):
                 id_index = agent.routing.index(minlane)
                 if(id_index > agent_index):
@@ -303,9 +296,6 @@ class ApolloEnv(gym.Env):
         pass
 
     def change_time(self, time):
-        '''
-        在step运行的过程中修改当前场景运行的时间
-        '''
         self.runner_time = time
 
     def record_scenario(self, name):
@@ -343,7 +333,6 @@ class ApolloEnv(gym.Env):
                 print('RTAMT Exception: {}'.format(err))
                 sys.exit()
 
-        # 这里传入的callback.ctr的单位是s
         rob = self.sp.update(time_step, [('speed', speed),
                                          ('nearestCarAhead', nearestCarAhead),
                                          ('nearestCarSpeed', nearestCarSpeed),
@@ -352,7 +341,6 @@ class ApolloEnv(gym.Env):
                                          ('distanceToLeftLane', distanceToLeftLane),
                                          ('distanceToOriginalLane', distanceToOriginalLane),
                                          ('route_complete', route_complete)])
-        # 这里会更新rob为reward
         return rob
 
     def stop(self):

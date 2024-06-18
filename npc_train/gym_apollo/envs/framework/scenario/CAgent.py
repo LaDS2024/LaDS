@@ -146,10 +146,7 @@ class CAgent:
         else:
             target_lane = original_lane
             current_lane = original_lane
-        # 这里传入的参数是当前车道和目标车道
-        # 左转：original_lane left_lane
-        # 右转：left_lane original_lane
-        # print(current_lane, target_lane)
+
         _, target_heading = ma.get_lane_and_heading(point_now, current_lane, target_lane)
 
         curr_heading = target_heading + self.action['steer']
@@ -166,11 +163,7 @@ class CAgent:
 
 
     def calculate_position_1(self) -> Tuple[PointENU, float, float, float]:
-        """
-        last_state有：position heading speed time traveled
-        curr_state有：acc steer current_time
-        返回：位置、朝向、速度
-        """
+
         ma = MapParser.get_instance()
         point_now = pointenu_to_point(self.last_state['position'])
         current_lane = ma.find_lane(point_now, self.routing)
